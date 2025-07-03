@@ -7,6 +7,8 @@
 #include "Engine/GameInstance.h"
 #include "SessionGameInstance.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FDele_SessionResult, bool, IsFind, const TArray<FBlueprintSessionResult>&, SessionResult);
+
 /**
  * 
  */
@@ -148,4 +150,7 @@ public:
 	void OnFindSessionResult(const TArray<FBlueprintSessionResult>& SessionResult);
 
 	void OnFindSessionResult_Implementation(const TArray<FBlueprintSessionResult>& SessionResult);
+
+	UPROPERTY(BlueprintAssignable, VisibleAnywhere, BlueprintCallable)
+	FDele_SessionResult Fuc_Dele_SessionResult;
 };

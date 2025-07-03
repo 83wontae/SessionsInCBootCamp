@@ -204,6 +204,9 @@ void USessionGameInstance::OnFindSessionsComplete(bool bWasSuccessful)
 				}
 
 				OnFindSessionResult(arrResult);
+
+				if (Fuc_Dele_SessionResult.IsBound())
+					Fuc_Dele_SessionResult.Broadcast(true, arrResult);
 			}
 		}
 	}
