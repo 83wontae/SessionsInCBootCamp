@@ -96,7 +96,14 @@ public:
 	*
 	*	@return bool true if successful, false otherwise
 	*/
-	virtual bool JoinSession(TSharedPtr<const FUniqueNetId> UserId, FName SessionName, const FOnlineSessionSearchResult& SearchResult);
+
+	// 스레드 안정성 정책(ESPMode)
+	// ThreadSafe : 멀티 스레드 환경에서 안전, 느림
+	// Fast : 게임 스레드에서 사용, 빠름, 멀티 스레드 환경에서 안전하지 않음
+	bool JoinSession(TSharedPtr<const FUniqueNetId, ESPMode::ThreadSafe> UserId,
+		FName SessionName,
+		const FOnlineSessionSearchResult& SearchResult);
+
 
 	/** Delegate for joining a session */
 	FOnJoinSessionCompleteDelegate OnJoinSessionCompleteDelegate;

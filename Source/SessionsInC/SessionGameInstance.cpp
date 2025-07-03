@@ -39,7 +39,8 @@ bool USessionGameInstance::HostSession(TSharedPtr<const FUniqueNetId> UserId, FN
 			SessionSettings = MakeShareable(new FOnlineSessionSettings());
 
 			SessionSettings->bIsLANMatch = bIsLAN;
-			SessionSettings->bUsesPresence = bIsPresence;
+			SessionSettings->bUsesPresence = bIsPresence;	// 사용자 존재 정보(presence)
+			SessionSettings->bUseLobbiesIfAvailable = true; // 로비 기능 사용
 			SessionSettings->NumPublicConnections = MaxNumPlayers;
 			SessionSettings->NumPrivateConnections = 0;
 			SessionSettings->bAllowInvites = true;
@@ -107,10 +108,12 @@ void USessionGameInstance::OnStartOnlineGameComplete(FName SessionName, bool bWa
 
 	// Get the Online Subsystem so we can get the Session Interface
 	IOnlineSubsystem* OnlineSub = IOnlineSubsystem::Get();
+
+	// Get the Session Interface to clear the Delegate
+	IOnlineSessionPtr Sessions = OnlineSub->GetSessionInterface();
+
 	if (OnlineSub)
 	{
-		// Get the Session Interface to clear the Delegate
-		IOnlineSessionPtr Sessions = OnlineSub->GetSessionInterface();
 		if (Sessions.IsValid())
 		{
 			// Clear the delegate, since we are done with this call
@@ -118,10 +121,18 @@ void USessionGameInstance::OnStartOnlineGameComplete(FName SessionName, bool bWa
 		}
 	}
 
+	FString strMapName;
+	if (false == Sessions->GetSessionSettings(SessionName)->Get(SETTING_MAPNAME, strMapName))
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red
+			, FString::Printf(TEXT("Can't Find MapName!!!")));
+		return;
+	}
+
 	// If the start was successful, we can open a NewMap if we want. Make sure to use "listen" as a parameter!
 	if (bWasSuccessful)
 	{
-		UGameplayStatics::OpenLevel(GetWorld(), "ThirdPersonMap", true, "listen");
+		UGameplayStatics::OpenLevel(GetWorld(), FName(strMapName), true, "listen");
 	}
 }
 
@@ -149,7 +160,7 @@ void USessionGameInstance::FindSessions(TSharedPtr<const FUniqueNetId> UserId, b
 			// We only want to set this Query Setting if "bIsPresence" is true
 			if (bIsPresence)
 			{
-				SessionSearch->QuerySettings.Set(SEARCH_PRESENCE, bIsPresence, EOnlineComparisonOp::Equals);
+				SessionSearch->QuerySettings.Set(SEARCH_LOBBIES, bIsPresence, EOnlineComparisonOp::Equals);
 			}
 
 			TSharedRef<FOnlineSessionSearch> SearchSettingsRef = SessionSearch.ToSharedRef();
@@ -212,7 +223,9 @@ void USessionGameInstance::OnFindSessionsComplete(bool bWasSuccessful)
 	}
 }
 
-bool USessionGameInstance::JoinSession(TSharedPtr<const FUniqueNetId> UserId, FName SessionName, const FOnlineSessionSearchResult& SearchResult)
+bool USessionGameInstance::JoinSession(TSharedPtr<const FUniqueNetId, ESPMode::ThreadSafe> UserId,
+	FName SessionName,
+	const FOnlineSessionSearchResult& SearchResult)
 {
 	// Return bool
 	bool bSuccessful = false;
