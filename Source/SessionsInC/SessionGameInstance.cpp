@@ -56,7 +56,7 @@ bool USessionGameInstance::HostSession(TSharedPtr<const FUniqueNetId> UserId, FN
 			*/
 			SessionSettings->Set(FName("SESSION_NAME"), SessionName.ToString(), EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 
-			SessionSettings->Set(SETTING_MAPNAME, FString("NewMap"), EOnlineDataAdvertisementType::ViaOnlineService);
+			SessionSettings->Set(SETTING_MAPNAME, FString("ThirdPersonMap"), EOnlineDataAdvertisementType::ViaOnlineService);
 
 			// Set the delegate to the Handle of the SessionInterface
 			OnCreateSessionCompleteDelegateHandle = Sessions->AddOnCreateSessionCompleteDelegate_Handle(OnCreateSessionCompleteDelegate);
@@ -121,7 +121,7 @@ void USessionGameInstance::OnStartOnlineGameComplete(FName SessionName, bool bWa
 	// If the start was successful, we can open a NewMap if we want. Make sure to use "listen" as a parameter!
 	if (bWasSuccessful)
 	{
-		UGameplayStatics::OpenLevel(GetWorld(), "NewMap", true, "listen");
+		UGameplayStatics::OpenLevel(GetWorld(), "ThirdPersonMap", true, "listen");
 	}
 }
 
@@ -189,6 +189,9 @@ void USessionGameInstance::OnFindSessionsComplete(bool bWasSuccessful)
 			// If we have found at least 1 session, we just going to debug them. You could add them to a list of UMG Widgets, like it is done in the BP version!
 			if (SessionSearch->SearchResults.Num() > 0)
 			{
+				TArray<FBlueprintSessionResult> arrResult;
+				arrResult.SetNum(SessionSearch->SearchResults.Num());
+
 				// "SessionSearch->SearchResults" is an Array that contains all the information. You can access the Session in this and get a lot of information.
 				// This can be customized later on with your own classes to add more information that can be set and displayed
 				for (int32 SearchIdx = 0; SearchIdx < SessionSearch->SearchResults.Num(); SearchIdx++)
@@ -196,7 +199,11 @@ void USessionGameInstance::OnFindSessionsComplete(bool bWasSuccessful)
 					// OwningUserName is just the SessionName for now. I guess you can create your own Host Settings class and GameSession Class and add a proper GameServer Name here.
 					// This is something you can't do in Blueprint for example!
 					GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, FString::Printf(TEXT("Session Number: %d | Sessionname: %s "), SearchIdx + 1, *(SessionSearch->SearchResults[SearchIdx].Session.OwningUserName)));
+
+					arrResult[SearchIdx].OnlineResult = SessionSearch->SearchResults[SearchIdx];
 				}
+
+				OnFindSessionResult(arrResult);
 			}
 		}
 	}
@@ -256,9 +263,19 @@ void USessionGameInstance::OnJoinSessionComplete(FName SessionName, EOnJoinSessi
 
 			if (PlayerController && Sessions->GetResolvedConnectString(SessionName, TravelURL))
 			{
+				FString strIp, strPort;
+				int32 nPort = 7777;
+
+				TravelURL.Split(TEXT(":"), &strIp, &strPort, ESearchCase::IgnoreCase, ESearchDir::FromStart);
+
+				FString NewTravelURL = FString::Printf(TEXT("%s:%d"), *strIp, nPort);
+
+				GEngine->AddOnScreenDebugMessage(
+					-1, 10.f, FColor::Red, FString::Printf(TEXT("NewTravelURL = %s"), *NewTravelURL));
+
 				// Finally call the ClienTravel. If you want, you could print the TravelURL to see
 				// how it really looks like
-				PlayerController->ClientTravel(TravelURL, ETravelType::TRAVEL_Absolute);
+				PlayerController->ClientTravel(NewTravelURL, ETravelType::TRAVEL_Absolute);
 			}
 		}
 	}
@@ -386,4 +403,8 @@ void USessionGameInstance::DestroySessionAndLeaveGame()
 			Sessions->DestroySession(GameSessionName);
 		}
 	}
+}
+
+void USessionGameInstance::OnFindSessionResult_Implementation(const TArray<FBlueprintSessionResult>& SessionResult)
+{
 }

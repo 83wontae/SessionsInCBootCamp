@@ -94,7 +94,7 @@ public:
 	*
 	*	@return bool true if successful, false otherwise
 	*/
-	bool JoinSession(TSharedPtr<const FUniqueNetId> UserId, FName SessionName, const FOnlineSessionSearchResult& SearchResult);
+	virtual bool JoinSession(TSharedPtr<const FUniqueNetId> UserId, FName SessionName, const FOnlineSessionSearchResult& SearchResult);
 
 	/** Delegate for joining a session */
 	FOnJoinSessionCompleteDelegate OnJoinSessionCompleteDelegate;
@@ -142,4 +142,10 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Network|Test")
 	void DestroySessionAndLeaveGame();
+
+public:
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	void OnFindSessionResult(const TArray<FBlueprintSessionResult>& SessionResult);
+
+	void OnFindSessionResult_Implementation(const TArray<FBlueprintSessionResult>& SessionResult);
 };
